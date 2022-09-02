@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Lms.Core.Entities;
 using Lms.Core.Repositories;
 using Lms.Data.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace Lms.Data.Repositories
 {
@@ -23,24 +24,25 @@ namespace Lms.Data.Repositories
             db.Module.Add(module);
         }
 
-        public async Task<bool> AnyAsync(int? id)
+        public async Task<bool> AnyAsync(int id)
         {
             return db.Module.Any(m => m.Id == id);
         }
 
-        public async Task<Module> FindAsync(int? id)
+        public async Task<Module> FindAsync(int id)
         {
             return await db.Module.FindAsync(id);
         }
 
         public async Task<IEnumerable<Module>> GetAllModules()
         {
-            return db.Module.AsEnumerable();
+            return await db.Module.ToListAsync();
         }
 
-        public async Task<Module> GetModule(int? id)
+        public async Task<Module?> GetModule(int id)
         {
-            return await db.Module.FindAsync(id);
+            //return await db.Module.FindAsync(id);
+            return await db.Module.FirstOrDefaultAsync(m => m.Id == id);
         }
 
         public void Remove(Module module)

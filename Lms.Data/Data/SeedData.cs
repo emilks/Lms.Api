@@ -83,7 +83,7 @@ namespace Lms.Data.Data
                     Title = faker.Finance.AccountName(),
                     StartDate = DateTime.Now.AddDays(faker.Random.Int(-5, 5)),
                     CourseId = course.Id,
-                    Course = course
+                    //Course = course
                 };
 
                 modules.Add(temp);

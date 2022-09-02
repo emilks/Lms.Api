@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Lms.Core.Entities;
 using Lms.Core.Repositories;
 using Lms.Data.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace Lms.Data.Repositories
 {
@@ -23,22 +24,22 @@ namespace Lms.Data.Repositories
             db.Course.Add(course);
         }
 
-        public async Task<bool> AnyAsync(int? id)
+        public async Task<bool> AnyAsync(int id)
         {
             return db.Course.Any(m => m.Id == id);
         }
 
-        public async Task<Course> FindAsync(int? id)
+        public async Task<Course> FindAsync(int id)
         {
             return await db.Course.FindAsync(id);
         }
 
         public async Task<IEnumerable<Course>> GetAllCourses()
         {
-            return db.Course.AsEnumerable();
+            return await db.Course.ToListAsync();
         }
 
-        public async Task<Course> GetCourse(int? id)
+        public async Task<Course> GetCourse(int id)
         {
             return await db.Course.FindAsync(id);
         }
