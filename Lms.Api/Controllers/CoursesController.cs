@@ -10,6 +10,7 @@ using Lms.Core.Entities;
 using Lms.Core.Repositories;
 using AutoMapper;
 using Lms.Core.Dto;
+using Microsoft.AspNetCore.JsonPatch;
 
 namespace Lms.Api.Controllers
 {
@@ -50,7 +51,7 @@ namespace Lms.Api.Controllers
                 return NotFound();
             }
 
-            return mapper.Map<Course>(course);
+            return Ok(mapper.Map<Course>(course));
             //return course;
         }
 
@@ -72,16 +73,9 @@ namespace Lms.Api.Controllers
             {
                 await uow.CompleteAsync();
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception)
             {
-                if (!(bool)await CourseExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                return StatusCode(500);
             }
 
             return Ok();
@@ -118,6 +112,26 @@ namespace Lms.Api.Controllers
         private async Task<bool?> CourseExists(int id)
         {
             return await uow.CourseRepository.AnyAsync(id);
+        }
+
+        [HttpPatch("{courseId}")]
+        public async Task<ActionResult<CourseDto>> PatchCourse(int courseId, JsonPatchDocument<CourseDto> patchDocument)
+        {
+            var course = await uow.CourseRepository.GetCourse(courseId);
+
+            if (course == null) return NotFound();
+
+            var coursedto = mapper.Map<CourseDto>(course);
+
+            patchDocument.ApplyTo(coursedto, ModelState);
+
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            mapper.Map(coursedto, course);
+
+            await uow.CompleteAsync();
+
+            return Ok(mapper.Map<CourseDto>(course));
         }
     }
 }

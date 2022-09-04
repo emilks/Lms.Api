@@ -10,6 +10,7 @@ using Lms.Core.Entities;
 using Lms.Core.Repositories;
 using AutoMapper;
 using Lms.Core.Dto;
+using Microsoft.AspNetCore.JsonPatch;
 
 namespace Lms.Api.Controllers
 {
@@ -50,7 +51,7 @@ namespace Lms.Api.Controllers
                 return NotFound();
             }
 
-            return mapper.Map<Module>(@module);
+            return Ok(mapper.Map<Module>(@module));
             //return @module;
         }
 
@@ -75,19 +76,12 @@ namespace Lms.Api.Controllers
             {
                 await uow.CompleteAsync();
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception)
             {
-                if (!(bool)await ModuleExistsAsync(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                return StatusCode(500);
             }
 
-            return NoContent();
+            return Ok();
 
             //return Ok(mapper.Map<CodeEventDto>(codeevent));
         }
@@ -117,12 +111,32 @@ namespace Lms.Api.Controllers
             uow.ModuleRepository.Remove(@module);
             await uow.CompleteAsync();
 
-            return NoContent();
+            return Ok();
         }
 
         private async Task<bool?> ModuleExistsAsync(int id)
         {
             return await uow.ModuleRepository.AnyAsync(id);
+        }
+
+        [HttpPatch("{moduleId}")]
+        public async Task<ActionResult<ModuleDto>> PatchCourse(int moduleId, JsonPatchDocument<ModuleDto> patchDocument)
+        {
+            var module = await uow.ModuleRepository.GetModule(moduleId);
+
+            if (module == null) return NotFound();
+
+            var moduledto = mapper.Map<ModuleDto>(module);
+
+            patchDocument.ApplyTo(moduledto, ModelState);
+
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            mapper.Map(moduledto, module);
+
+            await uow.CompleteAsync();
+
+            return Ok(mapper.Map<ModuleDto>(module));
         }
     }
 }
