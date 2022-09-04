@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore;
 using Lms.Data.Data;
 using Lms.Core.Entities;
 using Lms.Core.Repositories;
+using AutoMapper;
+using Lms.Core.Dto;
 
 namespace Lms.Api.Controllers
 {
@@ -17,18 +19,24 @@ namespace Lms.Api.Controllers
     {
         //private readonly LmsApiContext _context;
         private readonly IUnitOfWork uow;
+        private readonly IMapper mapper;
 
-        public ModulesController(LmsApiContext context, IUnitOfWork uow)
+        public ModulesController(LmsApiContext context, IUnitOfWork uow, IMapper mapper)
         {
             //_context = context;
             this.uow = uow;
+            this.mapper = mapper;
         }
 
         // GET: api/Modules
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Module>>> GetModule()
         {
-            return Ok(await uow.ModuleRepository.GetAllModules());
+            var modules = await uow.ModuleRepository.GetAllModules();
+            var moduleDto = mapper.Map<IEnumerable<Module>>(modules);
+
+            return Ok(moduleDto);
+            //return Ok(await uow.ModuleRepository.GetAllModules());
         }
 
         // GET: api/Modules/5
@@ -42,13 +50,14 @@ namespace Lms.Api.Controllers
                 return NotFound();
             }
 
-            return @module;
+            return mapper.Map<Module>(@module);
+            //return @module;
         }
 
         // PUT: api/Modules/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutModule(int id, Module @module)
+        public async Task<IActionResult> PutModule(int id, ModuleDto @module)
         {
             //TryUpdateModelAsync()
             var update = await uow.ModuleRepository.GetModule(id);
@@ -86,12 +95,13 @@ namespace Lms.Api.Controllers
         // POST: api/Modules
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Module>> PostModule(Module @module)
+        public async Task<ActionResult<Module>> PostModule(ModuleDto moduledto)
         {
-            uow.ModuleRepository.Add(@module);
+            var module = mapper.Map<Module>(moduledto);
+            uow.ModuleRepository.Add(module);
             await uow.CompleteAsync();
 
-            return CreatedAtAction("GetModule", new { id = @module.Id }, @module);
+            return CreatedAtAction("GetModule", new { id = module.Id }, module);
         }
 
         // DELETE: api/Modules/5

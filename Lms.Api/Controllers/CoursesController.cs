@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore;
 using Lms.Data.Data;
 using Lms.Core.Entities;
 using Lms.Core.Repositories;
+using AutoMapper;
+using Lms.Core.Dto;
 
 namespace Lms.Api.Controllers
 {
@@ -17,18 +19,24 @@ namespace Lms.Api.Controllers
     {
         //private readonly LmsApiContext _context;
         private readonly IUnitOfWork uow;
+        private readonly IMapper mapper;
 
-        public CoursesController(LmsApiContext context, IUnitOfWork uow)
+        public CoursesController(LmsApiContext context, IUnitOfWork uow, IMapper mapper)
         {
             //_context = context;
             this.uow = uow;
+            this.mapper = mapper;
         }
 
         // GET: api/Courses
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Course>>> GetCourse()
         {
-            return Ok(await uow.CourseRepository.GetAllCourses());
+            var courses = await uow.CourseRepository.GetAllCourses();
+            var courseDto = mapper.Map<IEnumerable<Course>>(courses);
+
+            return Ok(courseDto);
+            //return Ok(await uow.CourseRepository.GetAllCourses());
         }
 
         // GET: api/Courses/5
@@ -42,16 +50,23 @@ namespace Lms.Api.Controllers
                 return NotFound();
             }
 
-            return course;
+            return mapper.Map<Course>(course);
+            //return course;
         }
 
         // PUT: api/Courses/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutCourse(int id, Course course)
+        public async Task<IActionResult> PutCourse(int id, CourseDto course)
         {
 
             //_context.Entry(course).State = EntityState.Modified;
+            var update = await uow.CourseRepository.GetCourse(id);
+
+            if (update is null) return NotFound();
+
+            update.StartDate = course.StartDate;
+            update.Title = course.Title;
 
             try
             {
@@ -69,14 +84,15 @@ namespace Lms.Api.Controllers
                 }
             }
 
-            return NoContent();
+            return Ok();
         }
 
         // POST: api/Courses
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Course>> PostCourse(Course course)
+        public async Task<ActionResult<Course>> PostCourse(CourseDto courseDto)
         {
+            var course = mapper.Map<Course>(courseDto);
             uow.CourseRepository.Add(course);
             await uow.CompleteAsync();
 
@@ -96,7 +112,7 @@ namespace Lms.Api.Controllers
             uow.CourseRepository.Remove(course);
             await uow.CompleteAsync();
 
-            return NoContent();
+            return Ok();
         }
 
         private async Task<bool?> CourseExists(int id)
